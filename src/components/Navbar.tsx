@@ -7,7 +7,7 @@ import { ApiKeyModal } from './ApiKeyModal';
 import { BrainCircuit, BarChart3, Table as TableIcon, MessageSquareText, Lightbulb, Key, Trash2, UploadCloud, Sparkles } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentDataset, activeTab, setActiveTab, clearDataset, uploadFile, customApiKey, setIsCleaningModalOpen, exportData } = useData();
+  const { currentDataset, activeTab, setActiveTab, clearDataset, uploadFile, customApiKey, customApiProvider, setIsCleaningModalOpen, exportData } = useData();
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
   const handleNavFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,14 +148,20 @@ export const Navbar: React.FC = () => {
 
             <button
               onClick={() => setIsKeyModalOpen(true)}
-              className={`p-2.5 rounded-xl border text-xs font-medium backdrop-blur-md transition-all ${
+              className={`relative p-2.5 rounded-xl border text-xs font-medium backdrop-blur-md transition-all flex items-center gap-1.5 ${
                 customApiKey
                   ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                   : 'bg-slate-100 dark:bg-slate-900/60 border-slate-300 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:border-cyan-500'
               }`}
-              title="API Key Settings"
+              title={customApiKey ? `Custom AI API Key Active (${customApiProvider.toUpperCase()})` : "Configure Custom AI API Key"}
             >
               <Key className="w-4 h-4" />
+              {customApiKey && (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+              )}
             </button>
 
             <ThemeToggle />

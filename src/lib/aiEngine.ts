@@ -212,7 +212,9 @@ export function queryDatasetLocally(userQuery: string, dataset: DatasetAnalysis)
 export async function askAiAnalyst(
   userQuery: string,
   dataset: DatasetAnalysis,
-  apiKey?: string
+  apiKey?: string,
+  provider?: string,
+  model?: string
 ): Promise<ChatMessage> {
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -229,26 +231,41 @@ export async function askAiAnalyst(
           columns: dataset.columns,
           sampleData: dataset.data.slice(0, 10)
         },
-        apiKey: apiKey || undefined
+        apiKey: apiKey || undefined,
+        provider: provider || 'auto',
+        model: model || undefined
       })
     });
 
-    if (response.ok) {
-      const json = await response.json();
-      if (json.text) {
-        return {
-          id: `msg-${Date.now()}`,
-          sender: 'ai',
-          text: json.text,
-          timestamp,
-          chart: json.chart,
-          table: json.table,
-          sqlQuery: json.sqlQuery
-        };
-      }
+    const json = await response.json().catch(() => ({}));
+
+    if (response.ok && json.text) {
+      const providerSuffix = json.providerUsed ? `\n\n*(Powered by ${json.providerUsed})*` : '';
+      return {
+        id: `msg-${Date.now()}`,
+        sender: 'ai',
+        text: json.text + providerSuffix,
+        timestamp,
+        chart: json.chart,
+        table: json.table,
+        sqlQuery: json.sqlQuery
+      };
     }
-  } catch (e) {
-    console.warn('API Route failed or unconfigured, falling back to local NLP engine:', e);
+
+    // If API key was provided but request returned an error, alert user
+    if (apiKey && json.error) {
+      const localResult = queryDatasetLocally(userQuery, dataset);
+      return {
+        id: `msg-${Date.now()}`,
+        sender: 'ai',
+        text: `⚠️ **AI API Error**: ${json.error}\n\n*Falling back to built-in local NLP Data Engine:*\n\n${localResult.text}`,
+        timestamp,
+        chart: localResult.chart,
+        table: localResult.table
+      };
+    }
+  } catch (e: any) {
+    console.warn('API Route failed, falling back to local NLP engine:', e);
   }
 
   // Fallback to client-side smart engine

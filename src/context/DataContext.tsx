@@ -14,12 +14,16 @@ interface DataContextType {
   error: string | null;
   chatHistory: ChatMessage[];
   customApiKey: string;
+  customApiProvider: string;
+  customApiModel: string;
   activeTab: 'dashboard' | 'table' | 'chat' | 'insights';
   filters: DataFilterState;
   isCleaningModalOpen: boolean;
   setIsCleaningModalOpen: (open: boolean) => void;
   setActiveTab: (tab: 'dashboard' | 'table' | 'chat' | 'insights') => void;
   setCustomApiKey: (key: string) => void;
+  setCustomApiProvider: (provider: string) => void;
+  setCustomApiModel: (model: string) => void;
   uploadFile: (file: File) => Promise<void>;
   loadSampleDataset: (sampleId: string) => void;
   sendChatMessage: (query: string) => Promise<void>;
@@ -41,6 +45,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [customApiKey, setCustomApiKeyState] = useState<string>('');
+  const [customApiProvider, setCustomApiProviderState] = useState<string>('auto');
+  const [customApiModel, setCustomApiModelState] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'table' | 'chat' | 'insights'>('dashboard');
   const [filters, setFiltersState] = useState<DataFilterState>({});
   const [isCleaningModalOpen, setIsCleaningModalOpen] = useState<boolean>(false);
@@ -48,11 +54,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const savedKey = localStorage.getItem('ai_analyst_api_key');
     if (savedKey) setCustomApiKeyState(savedKey);
+    const savedProvider = localStorage.getItem('ai_analyst_api_provider');
+    if (savedProvider) setCustomApiProviderState(savedProvider);
+    const savedModel = localStorage.getItem('ai_analyst_api_model');
+    if (savedModel) setCustomApiModelState(savedModel);
   }, []);
 
   const setCustomApiKey = (key: string) => {
     setCustomApiKeyState(key);
     localStorage.setItem('ai_analyst_api_key', key);
+  };
+
+  const setCustomApiProvider = (provider: string) => {
+    setCustomApiProviderState(provider);
+    localStorage.setItem('ai_analyst_api_provider', provider);
+  };
+
+  const setCustomApiModel = (model: string) => {
+    setCustomApiModelState(model);
+    localStorage.setItem('ai_analyst_api_model', model);
   };
 
   const uploadFile = async (file: File) => {
@@ -193,7 +213,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAnalyzing(true);
 
     try {
-      const aiReply = await askAiAnalyst(query, datasetToQuery, customApiKey);
+      const aiReply = await askAiAnalyst(query, datasetToQuery, customApiKey, customApiProvider, customApiModel);
       setChatHistory(prev => [...prev, aiReply]);
     } catch (err: any) {
       setChatHistory(prev => [
@@ -227,12 +247,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         chatHistory,
         customApiKey,
+        customApiProvider,
+        customApiModel,
         activeTab,
         filters,
         isCleaningModalOpen,
         setIsCleaningModalOpen,
         setActiveTab,
         setCustomApiKey,
+        setCustomApiProvider,
+        setCustomApiModel,
         uploadFile,
         loadSampleDataset,
         sendChatMessage,
