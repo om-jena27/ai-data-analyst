@@ -2,6 +2,8 @@
 
 > An instant, browser-powered AI Data Analyst and interactive visual dashboard suite. Upload heavy CSV, Excel, or JSON datasets to get automated executive summaries, 8 dynamic interactive charts, cross-filtering analytics, automated data cleaning, Pearson correlation heatmaps, and conversational AI insights.
 
+🌐 **Live Application**: [https://ai-data-analyst-beige.vercel.app](https://ai-data-analyst-beige.vercel.app)
+
 ---
 
 ## ✨ Features
@@ -15,7 +17,7 @@
   - Trim text whitespace & normalize casing.
   - Drop high-null columns (>40% missing).
   - Filter extreme statistical outliers (>3σ).
-  - View live Quality Score audit previews ( ightarrow 100/100$).
+  - View live Quality Score audit previews ( ightarrow 100/100$).
 - 📈 **Pearson Correlation Heatmap**: Automatic pairwise statistical correlation matrix (-1.0 to +1.0) with positive (cyan) and inverse (rose) color indicators.
 - 🤖 **Conversational AI Intelligence**: Ask plain-English questions about your dataset powered by Google Gemini AI with intelligent fallback to local statistical heuristics.
 - 📥 **One-Click CSV Export**: Download cleaned and filtered data subsets directly to your machine.
@@ -35,7 +37,15 @@
 
 ---
 
-## 🚀 Quick Start & Installation
+## 🚀 Live Demo & Installation
+
+### Live Web App
+Experience the live application online at:
+👉 **[https://ai-data-analyst-beige.vercel.app](https://ai-data-analyst-beige.vercel.app)**
+
+---
+
+### Local Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm installed.
@@ -56,7 +66,7 @@ npm install
 npm run dev
 `
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the app!
+Open [https://ai-data-analyst-beige.vercel.app](https://ai-data-analyst-beige.vercel.app) or local server at `http://localhost:3000` to view the app!
 
 ---
 
