@@ -113,7 +113,8 @@ export function queryDatasetLocally(userQuery: string, dataset: DatasetAnalysis)
     const catCol = findMentionedCol(catCols) || catCols[0] || columns[0];
 
     if (numCol) {
-      const sortedRows = [...data]
+      const sample = data.length > 20000 ? data.slice(0, 20000) : data;
+      const sortedRows = [...sample]
         .filter(r => r[numCol.name] !== null && r[numCol.name] !== undefined)
         .sort((a, b) => Number(b[numCol.name]) - Number(a[numCol.name]))
         .slice(0, 5);
