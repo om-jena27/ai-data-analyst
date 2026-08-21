@@ -256,24 +256,13 @@ export function analyzeDataArray(data: Record<string, any>[], fileName: string, 
   const insights = generateDatasetInsights(columns, totalRows, data);
   const qualityScore = calculateQualityScore(columns, totalRows);
 
-  // Uniform reservoir sampling for React state (max 10,000 rows retained in state for ultra-fast rendering & filtering)
-  const MAX_SAMPLED_ROWS = 10000;
-  let sampledData = data;
-  if (totalRows > MAX_SAMPLED_ROWS) {
-    const step = Math.ceil(totalRows / MAX_SAMPLED_ROWS);
-    sampledData = [];
-    for (let i = 0; i < totalRows; i += step) {
-      sampledData.push(data[i]);
-    }
-  }
-
   return {
     fileName,
     fileSize: fileSizeStr,
     rowCount: totalRows,
     columnCount: columns.length,
     columns,
-    data: sampledData,
+    data,
     insights,
     qualityScore
   };
@@ -411,7 +400,7 @@ export function executeDataCleaning(
     const deduplicatedRows: Record<string, any>[] = [];
 
     rows.forEach(row => {
-      const rowKey = JSON.stringify(row);
+      const rowKey = Object.values(row).join('|');
       if (!seen.has(rowKey)) {
         seen.add(rowKey);
         deduplicatedRows.push(row);
