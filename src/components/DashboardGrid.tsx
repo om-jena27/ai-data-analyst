@@ -263,9 +263,8 @@ export const DashboardGrid: React.FC = () => {
     // Chart 8: Statistical Profile & Metric Ranges Summary (8th Visualization to complete the 2x4 grid!)
     if (numericCols.length > 0) {
       const statData = numericCols.slice(0, 5).map(col => {
-        const vals = data.map(r => Number(r[col.name])).filter(n => !isNaN(n));
-        const mean = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
-        const max = vals.length > 0 ? Math.max(...vals) : 0;
+        const mean = col.mean !== undefined ? Math.round(col.mean) : 0;
+        const max = col.max !== undefined ? col.max : 0;
         return {
           Metric: col.name,
           Average: mean,

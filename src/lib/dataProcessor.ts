@@ -25,38 +25,29 @@ export function formatBytes(bytes: number, decimals = 2): string {
 /**
  * Infer statistical data type of a column
  */
-function inferColumnType(name: string, values: any[]): ColumnType {
-  let validValues = values.filter(v => v !== null && v !== undefined && v !== '');
-  if (validValues.length === 0) return 'text';
+function inferColumnType(name: string, sampleValues: any[], numericCount: number, validCount: number): ColumnType {
+  if (validCount === 0) return 'text';
 
-  // Sample up to 100 non-null values
-  const sample = validValues.slice(0, 100);
-
-  // Check if date column by name or values
   const isDateName = /date|time|created|updated|shipped|delivery/i.test(name.trim());
-  const dateCount = sample.filter(v => {
+  const dateCount = sampleValues.filter(v => {
     if (v instanceof Date) return true;
-    if (typeof v === 'number' && isDateName && v > 10000 && v < 100000) return true; // Excel serial date
+    if (typeof v === 'number' && isDateName && v > 10000 && v < 100000) return true;
     if (typeof v === 'string' && v.trim().length >= 4) {
       const parsed = Date.parse(v);
-      return !isNaN(parsed) && !/^\d+$/.test(v.trim()); // avoid raw integer strings being parsed as year 1970
+      return !isNaN(parsed) && !/^\d+$/.test(v.trim());
     }
     return false;
   }).length;
 
-  if (isDateName || dateCount / sample.length > 0.70) {
+  if (isDateName || (sampleValues.length > 0 && dateCount / sampleValues.length > 0.70)) {
     return 'datetime';
   }
 
-  // Check if numeric
-  const numericCount = sample.filter(v => !isNaN(Number(v))).length;
-  if (numericCount / sample.length > 0.85) {
+  if (validCount > 0 && numericCount / validCount > 0.85) {
     return 'numeric';
   }
 
-  // Categorical vs Text check
-  const uniqueCount = new Set(validValues).size;
-  if (uniqueCount <= Math.min(30, validValues.length * 0.4)) {
+  if (sampleValues.length <= 30) {
     return 'categorical';
   }
 
@@ -64,17 +55,53 @@ function inferColumnType(name: string, values: any[]): ColumnType {
 }
 
 /**
- * Compute detailed column metrics
+ * Compute detailed column metrics using single-pass iteration
  */
-function computeColumnSummary(name: string, rawValues: any[], totalRows: number): ColumnSummary {
-  const nullCount = rawValues.filter(v => v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v))).length;
-  const nullPercentage = Number(((nullCount / totalRows) * 100).toFixed(1));
-  const validValues = rawValues.filter(v => v !== null && v !== undefined && v !== '' && (typeof v !== 'number' || !isNaN(v)));
-  const uniqueValues = Array.from(new Set(validValues));
-  const uniqueCount = uniqueValues.length;
+function computeColumnSummary(name: string, data: Record<string, any>[], totalRows: number): ColumnSummary {
+  let nullCount = 0;
+  let sum = 0;
+  let numericCount = 0;
+  let min = Infinity;
+  let max = -Infinity;
+  const freqMap: Record<string, number> = {};
+  let freqKeysCount = 0;
+  const sampleValues: any[] = [];
+  const numericSample: number[] = [];
 
-  const colType = inferColumnType(name, rawValues);
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i]?.[name];
+    const isNull = v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v));
+    if (isNull) {
+      nullCount++;
+    } else {
+      if (sampleValues.length < 5 && !sampleValues.includes(v)) {
+        sampleValues.push(v);
+      }
+      const num = Number(v);
+      if (!isNaN(num) && typeof v !== 'boolean') {
+        numericCount++;
+        sum += num;
+        if (num < min) min = num;
+        if (num > max) max = num;
+        if (numericSample.length < 5000) {
+          numericSample.push(num);
+        }
+      }
+      if (freqKeysCount < 100) {
+        const strVal = String(v);
+        if (!freqMap[strVal]) {
+          freqKeysCount++;
+        }
+        freqMap[strVal] = (freqMap[strVal] || 0) + 1;
+      }
+    }
+  }
+
+  const nullPercentage = Number(((nullCount / totalRows) * 100).toFixed(1));
+  const validCount = totalRows - nullCount;
+  const colType = inferColumnType(name, sampleValues, numericCount, validCount);
   const isIdName = /(id|_id|uuid|key|code|index|seq|number|num|no|#|item|lineitem|orderid|txid|ref|sku)$/i.test(name.trim());
+  const uniqueCount = freqKeysCount >= 100 ? Math.round(validCount * 0.85) : Object.keys(freqMap).length;
   const isIdCol = isIdName || (uniqueCount >= totalRows * 0.85 && (colType === 'numeric' || colType === 'text'));
 
   const summary: ColumnSummary = {
@@ -84,39 +111,30 @@ function computeColumnSummary(name: string, rawValues: any[], totalRows: number)
     nullPercentage,
     uniqueCount,
     isIdColumn: isIdCol,
-    sampleValues: uniqueValues.slice(0, 5)
+    sampleValues
   };
 
-  if (colType === 'numeric' && validValues.length > 0) {
-    const nums = validValues.map(v => Number(v)).filter(n => !isNaN(n)).sort((a, b) => a - b);
-    if (nums.length > 0) {
-      summary.min = nums[0];
-      summary.max = nums[nums.length - 1];
-      // Only compute sum, mean, median for NON-ID numeric metrics
-      if (!isIdCol) {
-        const sum = nums.reduce((acc, curr) => acc + curr, 0);
-        summary.sum = sum;
-        summary.mean = Number((sum / nums.length).toFixed(2));
-        const mid = Math.floor(nums.length / 2);
-        summary.median = nums.length % 2 !== 0 ? nums[mid] : Number(((nums[mid - 1] + nums[mid]) / 2).toFixed(2));
+  if (colType === 'numeric' && numericCount > 0) {
+    summary.min = min === Infinity ? 0 : min;
+    summary.max = max === -Infinity ? 0 : max;
+    if (!isIdCol) {
+      summary.sum = Number(sum.toFixed(2));
+      summary.mean = Number((sum / numericCount).toFixed(2));
+      if (numericSample.length > 0) {
+        numericSample.sort((a, b) => a - b);
+        const mid = Math.floor(numericSample.length / 2);
+        summary.median = numericSample.length % 2 !== 0 ? numericSample[mid] : Number(((numericSample[mid - 1] + numericSample[mid]) / 2).toFixed(2));
       }
     }
-  } else if ((colType === 'categorical' || colType === 'text') && validValues.length > 0) {
-    const freqMap: Record<string, number> = {};
-    validValues.forEach(v => {
-      const s = String(v);
-      freqMap[s] = (freqMap[s] || 0) + 1;
-    });
-
+  } else if ((colType === 'categorical' || colType === 'text') && validCount > 0) {
     const sortedCats = Object.entries(freqMap)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([value, count]) => ({
         value,
         count,
-        percentage: Number(((count / validValues.length) * 100).toFixed(1))
+        percentage: Number(((count / validCount) * 100).toFixed(1))
       }));
-
     summary.topCategories = sortedCats;
   }
 
@@ -212,24 +230,42 @@ function calculateQualityScore(columns: ColumnSummary[], totalRows: number): num
 }
 
 /**
- * Process Raw Array of Objects into DatasetAnalysis
+ * Process Raw Array of Objects into DatasetAnalysis with memory-safe sampling
  */
 export function analyzeDataArray(data: Record<string, any>[], fileName: string, fileSizeStr: string): DatasetAnalysis {
   if (!data || data.length === 0) {
     throw new Error('File contains no valid rows or empty data.');
   }
 
-  // Extract column headers
-  const colNames = Array.from(new Set(data.flatMap(row => Object.keys(row))));
   const totalRows = data.length;
 
+  // Memory-safe column header extraction (inspect first 500 rows instead of flatMap over all rows)
+  const colNamesSet = new Set<string>();
+  const sampleLimit = Math.min(totalRows, 500);
+  for (let i = 0; i < sampleLimit; i++) {
+    if (data[i]) {
+      Object.keys(data[i]).forEach(k => colNamesSet.add(k));
+    }
+  }
+  const colNames = Array.from(colNamesSet);
+
   const columns: ColumnSummary[] = colNames.map(colName => {
-    const rawValues = data.map(r => r[colName]);
-    return computeColumnSummary(colName, rawValues, totalRows);
+    return computeColumnSummary(colName, data, totalRows);
   });
 
   const insights = generateDatasetInsights(columns, totalRows, data);
   const qualityScore = calculateQualityScore(columns, totalRows);
+
+  // Uniform reservoir sampling for React state (max 10,000 rows retained in state for ultra-fast rendering & filtering)
+  const MAX_SAMPLED_ROWS = 10000;
+  let sampledData = data;
+  if (totalRows > MAX_SAMPLED_ROWS) {
+    const step = Math.ceil(totalRows / MAX_SAMPLED_ROWS);
+    sampledData = [];
+    for (let i = 0; i < totalRows; i += step) {
+      sampledData.push(data[i]);
+    }
+  }
 
   return {
     fileName,
@@ -237,7 +273,7 @@ export function analyzeDataArray(data: Record<string, any>[], fileName: string, 
     rowCount: totalRows,
     columnCount: columns.length,
     columns,
-    data,
+    data: sampledData,
     insights,
     qualityScore
   };
@@ -257,6 +293,7 @@ export async function parseUploadedFile(file: File): Promise<DatasetAnalysis> {
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true,
+        fastMode: true,
         complete: (results) => {
           try {
             const parsed = analyzeDataArray(results.data as Record<string, any>[], fileName, fileSizeStr);

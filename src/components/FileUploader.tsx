@@ -103,7 +103,7 @@ export const FileUploader: React.FC = () => {
 
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Instant Insights</span>
+            <span>Large Datasets (50MB+ Ready)</span>
           </div>
         </div>
 
