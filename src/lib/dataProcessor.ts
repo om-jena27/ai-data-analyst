@@ -277,12 +277,11 @@ export async function parseUploadedFile(file: File): Promise<DatasetAnalysis> {
   const extension = fileName.split('.').pop()?.toLowerCase();
 
   if (extension === 'csv' || extension === 'txt') {
+    const text = await file.text();
     return new Promise((resolve, reject) => {
-      Papa.parse(file, {
+      Papa.parse(text, {
         header: true,
-        dynamicTyping: true,
         skipEmptyLines: true,
-        fastMode: true,
         complete: (results) => {
           try {
             const parsed = analyzeDataArray(results.data as Record<string, any>[], fileName, fileSizeStr);
@@ -291,7 +290,7 @@ export async function parseUploadedFile(file: File): Promise<DatasetAnalysis> {
             reject(err);
           }
         },
-        error: (err) => {
+        error: (err: any) => {
           reject(new Error(`CSV Parse Error: ${err.message}`));
         }
       });

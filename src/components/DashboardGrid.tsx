@@ -241,7 +241,8 @@ export const DashboardGrid: React.FC = () => {
       const numCol = numericCols[0];
       const nameCol = labelCol;
 
-      const topRecords = [...data]
+      const sample = data.length > 20000 ? data.slice(0, 20000) : data;
+      const topRecords = [...sample]
         .filter(r => r[numCol.name] !== undefined)
         .sort((a, b) => Number(b[numCol.name]) - Number(a[numCol.name]))
         .slice(0, 5)
