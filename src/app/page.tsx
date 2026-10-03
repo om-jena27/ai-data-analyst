@@ -9,46 +9,55 @@ import { ExecutiveSummary } from '@/components/ExecutiveSummary';
 import { DashboardGrid } from '@/components/DashboardGrid';
 import { DataOverviewTable } from '@/components/DataOverviewTable';
 import { AiChatAssistant } from '@/components/AiChatAssistant';
+import { VisionStudio } from '@/components/VisionStudio';
 import { GlassCard } from '@/components/GlassCard';
 import { DashboardFilters } from '@/components/DashboardFilters';
 import { CorrelationHeatmap } from '@/components/CorrelationHeatmap';
 import { DataCleaningModal } from '@/components/DataCleaningModal';
-import { Sparkles, Zap, BarChart3, Database } from 'lucide-react';
+import { Sparkles, Zap, BarChart3, Database, FileImage } from 'lucide-react';
+import { AppTab } from '@/lib/types';
 
 export default function Home() {
-  const { currentDataset, activeTab, setActiveTab } = useData();
+  const { currentDataset, activeImage, activeTab, setActiveTab } = useData();
+
+  const isInitialState = !currentDataset && !activeImage;
+  const showVisionStudio = activeTab === 'vision' || (!currentDataset && Boolean(activeImage));
+
+  const mobileTabs: AppTab[] = activeImage
+    ? ['dashboard', 'table', 'chat', 'insights', 'vision']
+    : ['dashboard', 'table', 'chat', 'insights'];
 
   return (
     <div className="min-h-screen bg-radial-light dark:bg-radial-dark flex flex-col transition-colors duration-300">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {!currentDataset ? (
+        {isInitialState ? (
           /* Empty / Initial State */
           <div className="py-12 space-y-8">
             <div className="text-center space-y-4 max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 text-xs font-semibold backdrop-blur-md">
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Next-Gen Glassmorphic AI Analyst</span>
+                <span>Next-Gen Glassmorphic AI Analyst & Multimodal Vision</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
-                Turn Raw Datasets Into <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 via-violet-500 to-emerald-400">Actionable Intelligence</span>
+                Turn Datasets & Chart Images Into <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 via-violet-500 to-emerald-400">Actionable Intelligence</span>
               </h1>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                Upload your heavy CSV, Excel, or JSON datasets. Get instant executive summaries, interactive dashboards, and ask questions in plain English.
+                Upload raw CSV, Excel, or JSON files — or drop in <b>chart screenshots and image tables</b>. Get instant visual OCR, digitized interactive dashboards, and ask questions in natural language.
               </p>
             </div>
 
-            {/* File Upload Zone */}
+            {/* File & Image Upload Zone */}
             <FileUploader />
 
-            {/* Pre-built Sample Datasets */}
+            {/* Pre-built Sample Datasets & Sample Chart Image */}
             <SampleDataSelector />
 
             {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-8 max-w-6xl mx-auto">
               <GlassCard className="p-5 space-y-2">
                 <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 w-fit border border-cyan-500/20">
                   <Zap className="w-5 h-5" />
@@ -61,11 +70,21 @@ export default function Home() {
 
               <GlassCard className="p-5 space-y-2">
                 <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 w-fit border border-violet-500/20">
+                  <FileImage className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Multimodal Vision Studio</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Extracts numbers & data series from chart screenshots and invoices into digitized interactive Recharts and tables.
+                </p>
+              </GlassCard>
+
+              <GlassCard className="p-5 space-y-2">
+                <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-400 w-fit border border-teal-500/20">
                   <BarChart3 className="w-5 h-5" />
                 </div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Automated Dashboard</h4>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Automated Dashboards</h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Automatically generates Bar, Line, Pie, and Area charts with glassmorphism tooltips and dynamic color palettes.
+                  Generates Bar, Line, Pie, and Area charts with glassmorphism tooltips and dynamic color palettes.
                 </p>
               </GlassCard>
 
@@ -75,11 +94,14 @@ export default function Home() {
                 </div>
                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Conversational Q&A</h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Ask natural language questions like *"What is the top product category?"* and receive tabular and chart answers.
+                  Ask natural language questions about datasets or images and receive statistical summaries and visual answers.
                 </p>
               </GlassCard>
             </div>
           </div>
+        ) : showVisionStudio ? (
+          /* Active Vision Studio State */
+          <VisionStudio />
         ) : (
           /* Active Dataset Dashboard State */
           <div className="space-y-8 animate-in fade-in duration-300">
@@ -91,7 +113,7 @@ export default function Home() {
 
             {/* Mobile Tab Pills */}
             <div className="md:hidden flex items-center gap-2 overflow-x-auto pb-2">
-              {(['dashboard', 'table', 'chat', 'insights'] as const).map((tab) => (
+              {mobileTabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -101,7 +123,7 @@ export default function Home() {
                       : 'bg-slate-800/60 text-slate-300 border-slate-700'
                   }`}
                 >
-                  {tab}
+                  {tab === 'vision' ? 'Vision Studio' : tab}
                 </button>
               ))}
             </div>
@@ -126,7 +148,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="w-full border-t border-slate-200/50 dark:border-white/10 py-6 mt-12 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© {new Date().getFullYear()} DataPulse AI • Modern AI Data Analyst & Glassmorphism Dashboard</p>
+          <p>© {new Date().getFullYear()} DataPulse AI • Next-Gen Multimodal Dataset & Image Analyst</p>
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             <span className="font-semibold text-slate-700 dark:text-slate-300">Vercel Ready Architecture</span>

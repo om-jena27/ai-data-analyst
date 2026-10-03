@@ -4,30 +4,49 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { askAiAnalyst } from '@/lib/aiEngine';
 import { parseUploadedFile, executeDataCleaning, exportToCsv, analyzeDataArray } from '@/lib/dataProcessor';
 import { SAMPLE_DATASETS } from '@/lib/sampleData';
-import { ChatMessage, DatasetAnalysis, DataCleaningOptions, CleaningAuditSummary, DataFilterState } from '@/lib/types';
+import { analyzeImageFile, askImageQuestion } from '@/lib/imageAnalyzer';
+import { SAMPLE_IMAGES } from '@/lib/sampleImages';
+import {
+  ChatMessage,
+  DatasetAnalysis,
+  DataCleaningOptions,
+  CleaningAuditSummary,
+  DataFilterState,
+  AppTab,
+  ImageAnalysisResult
+} from '@/lib/types';
 
 interface DataContextType {
   originalDataset: DatasetAnalysis | null;
   currentDataset: DatasetAnalysis | null;
   filteredDataset: DatasetAnalysis | null;
+  activeImage: ImageAnalysisResult | null;
+  imageChatHistory: ChatMessage[];
   isAnalyzing: boolean;
+  isAnalyzingImage: boolean;
   error: string | null;
   chatHistory: ChatMessage[];
   customApiKey: string;
   customApiProvider: string;
   customApiModel: string;
-  activeTab: 'dashboard' | 'table' | 'chat' | 'insights';
+  activeTab: AppTab;
   filters: DataFilterState;
   isCleaningModalOpen: boolean;
   setIsCleaningModalOpen: (open: boolean) => void;
-  setActiveTab: (tab: 'dashboard' | 'table' | 'chat' | 'insights') => void;
+  setActiveTab: (tab: AppTab) => void;
   setCustomApiKey: (key: string) => void;
   setCustomApiProvider: (provider: string) => void;
   setCustomApiModel: (model: string) => void;
   uploadFile: (file: File) => Promise<void>;
+  uploadImageFile: (file: File) => Promise<void>;
   loadSampleDataset: (sampleId: string) => void;
+  loadSampleImage: (sampleId?: string) => Promise<void>;
+  convertImageToDataset: () => void;
+  exportImageTableToCsv: () => void;
   sendChatMessage: (query: string) => Promise<void>;
+  sendImageChatMessage: (query: string) => Promise<void>;
   clearDataset: () => void;
+  clearActiveImage: () => void;
   setError: (err: string | null) => void;
   setFilters: (filters: DataFilterState) => void;
   clearFilters: () => void;
@@ -41,13 +60,16 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [originalDataset, setOriginalDataset] = useState<DatasetAnalysis | null>(null);
   const [currentDataset, setCurrentDataset] = useState<DatasetAnalysis | null>(null);
+  const [activeImage, setActiveImage] = useState<ImageAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [imageChatHistory, setImageChatHistory] = useState<ChatMessage[]>([]);
   const [customApiKey, setCustomApiKeyState] = useState<string>('');
   const [customApiProvider, setCustomApiProviderState] = useState<string>('auto');
   const [customApiModel, setCustomApiModelState] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'table' | 'chat' | 'insights'>('dashboard');
+  const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
   const [filters, setFiltersState] = useState<DataFilterState>({});
   const [isCleaningModalOpen, setIsCleaningModalOpen] = useState<boolean>(false);
 
@@ -75,7 +97,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('ai_analyst_api_model', model);
   };
 
+  const uploadImageFile = async (file: File) => {
+    setIsAnalyzingImage(true);
+    setError(null);
+    try {
+      const result = await analyzeImageFile(file, customApiKey, customApiProvider, customApiModel);
+      setActiveImage(result);
+      setActiveTab('vision');
+      setImageChatHistory([
+        {
+          id: `img-msg-${Date.now()}`,
+          sender: 'ai',
+          text: `Successfully analyzed **${result.fileName}** (${result.detectedVisuals?.dimensions || 'Resolution OK'}, ${result.fileSize}).\n\n${result.summary}\n\nYou can inspect the extracted metrics, switch chart types, view the data table, or ask any question!`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } catch (err: any) {
+      console.error('Image Upload Error:', err);
+      setError(err.message || 'Failed to analyze uploaded image');
+    } finally {
+      setIsAnalyzingImage(false);
+    }
+  };
+
   const uploadFile = async (file: File) => {
+    if (file.type.startsWith('image/') || /\.(png|jpe?g|webp|svg|gif|bmp)$/i.test(file.name)) {
+      return uploadImageFile(file);
+    }
+
     setIsAnalyzing(true);
     setError(null);
     try {
@@ -230,6 +279,106 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loadSampleImage = async (sampleId?: string) => {
+    const target = SAMPLE_IMAGES[0];
+    if (target) {
+      setIsAnalyzingImage(true);
+      setError(null);
+      try {
+        const res = await fetch(target.dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], target.fileName, { type: 'image/svg+xml' });
+        await uploadImageFile(file);
+      } catch (e: any) {
+        setError(e.message || 'Failed to load sample image');
+        setIsAnalyzingImage(false);
+      }
+    }
+  };
+
+  const convertImageToDataset = () => {
+    if (!activeImage || !activeImage.extractedTable || activeImage.extractedTable.dataObjects.length === 0) {
+      setError('No structured tabular data available to convert into a dataset.');
+      return;
+    }
+    try {
+      const cleanFileName = activeImage.fileName.replace(/\.[^/.]+$/, "") + '_extracted.csv';
+      const analysis = analyzeDataArray(activeImage.extractedTable.dataObjects, cleanFileName, activeImage.fileSize);
+      setOriginalDataset(analysis);
+      setCurrentDataset(analysis);
+      setFiltersState({});
+      setActiveTab('dashboard');
+      setChatHistory([
+        {
+          id: `msg-${Date.now()}`,
+          sender: 'ai',
+          text: `Successfully promoted extracted image data from **${activeImage.fileName}** to a live interactive dataset (${analysis.rowCount} rows, ${analysis.columnCount} columns)!\n\nAll dashboard charts, correlations, and cleaning tools are now active.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } catch (err: any) {
+      setError(`Failed to convert image data: ${err.message}`);
+    }
+  };
+
+  const exportImageTableToCsv = () => {
+    if (!activeImage?.extractedTable) return;
+    const { headers, rows } = activeImage.extractedTable;
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${activeImage.fileName.replace(/\.[^/.]+$/, "")}_extracted.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const sendImageChatMessage = async (query: string) => {
+    if (!query.trim() || !activeImage) return;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const userMsg: ChatMessage = {
+      id: `user-img-${Date.now()}`,
+      sender: 'user',
+      text: query,
+      timestamp
+    };
+    setImageChatHistory(prev => [...prev, userMsg]);
+    setIsAnalyzingImage(true);
+    try {
+      const reply = await askImageQuestion(activeImage, query, customApiKey, customApiProvider, customApiModel);
+      const aiMsg: ChatMessage = {
+        id: `ai-img-${Date.now()}`,
+        sender: 'ai',
+        text: reply.text,
+        chart: reply.chart,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setImageChatHistory(prev => [...prev, aiMsg]);
+    } catch (err: any) {
+      setImageChatHistory(prev => [
+        ...prev,
+        {
+          id: `ai-img-err-${Date.now()}`,
+          sender: 'ai',
+          text: `Error analyzing image query: ${err.message}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } finally {
+      setIsAnalyzingImage(false);
+    }
+  };
+
+  const clearActiveImage = () => {
+    setActiveImage(null);
+    setImageChatHistory([]);
+    if (currentDataset) {
+      setActiveTab('dashboard');
+    }
+  };
+
   const clearDataset = () => {
     setOriginalDataset(null);
     setCurrentDataset(null);
@@ -243,7 +392,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         originalDataset,
         currentDataset,
         filteredDataset,
+        activeImage,
+        imageChatHistory,
         isAnalyzing,
+        isAnalyzingImage,
         error,
         chatHistory,
         customApiKey,
@@ -258,9 +410,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCustomApiProvider,
         setCustomApiModel,
         uploadFile,
+        uploadImageFile,
         loadSampleDataset,
+        loadSampleImage,
+        convertImageToDataset,
+        exportImageTableToCsv,
         sendChatMessage,
+        sendImageChatMessage,
         clearDataset,
+        clearActiveImage,
         setError,
         setFilters,
         clearFilters,

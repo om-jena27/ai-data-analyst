@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
-import { UploadCloud, FileSpreadsheet, FileJson, Sparkles, Loader2, FolderOpen } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, FileJson, Sparkles, Loader2, FolderOpen, FileImage } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 
 export const FileUploader: React.FC = () => {
-  const { uploadFile, isAnalyzing, error, setError } = useData();
+  const { uploadFile, isAnalyzing, isAnalyzingImage, error, setError } = useData();
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const isBusy = isAnalyzing || isAnalyzingImage;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -59,13 +61,13 @@ export const FileUploader: React.FC = () => {
           id="main-dataset-upload-input"
           type="file"
           onChange={handleFileChange}
-          accept=".csv,.xlsx,.xls,.json"
+          accept=".csv,.xlsx,.xls,.json,.png,.jpg,.jpeg,.webp"
           className="sr-only"
         />
 
         <div className="flex justify-center mb-4">
           <div className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 via-violet-500/20 to-emerald-500/20 text-cyan-400 border border-cyan-500/30 shadow-glow-cyan">
-            {isAnalyzing ? (
+            {isBusy ? (
               <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
             ) : (
               <UploadCloud className="w-10 h-10 text-cyan-400" />
@@ -74,11 +76,15 @@ export const FileUploader: React.FC = () => {
         </div>
 
         <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-2">
-          {isAnalyzing ? 'Analyzing Heavy Dataset...' : 'Upload Dataset for Instant AI Analysis'}
+          {isAnalyzingImage
+            ? 'Analyzing Visual Data & Extracting Charts...'
+            : isAnalyzing
+            ? 'Analyzing Heavy Dataset...'
+            : 'Upload Dataset or Image for Instant AI Analysis'}
         </h3>
 
         <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
-          Drag & drop your dataset here, or click anywhere inside to browse your files. Supports <b>CSV</b>, <b>Excel (.xlsx, .xls)</b>, and <b>JSON</b>.
+          Drag & drop your files here, or click anywhere inside to browse. Supports <b>CSV</b>, <b>Excel (.xlsx)</b>, <b>JSON</b>, and <b>Chart/Table Images (PNG, JPG, WebP)</b>.
         </p>
 
         {/* Action Button */}
@@ -90,20 +96,25 @@ export const FileUploader: React.FC = () => {
         </div>
 
         {/* Supported Format Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700">
             <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
             <span>CSV / Excel</span>
           </div>
 
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700">
+            <FileImage className="w-4 h-4 text-cyan-400" />
+            <span>Chart Images (Vision AI)</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700">
             <FileJson className="w-4 h-4 text-violet-400" />
-            <span>JSON Data</span>
+            <span>JSON</span>
           </div>
 
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Large Datasets (50MB+ Ready)</span>
+            <span>50MB+ Fast Engine</span>
           </div>
         </div>
 

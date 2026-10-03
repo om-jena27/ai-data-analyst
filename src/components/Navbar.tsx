@@ -4,10 +4,22 @@ import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { ThemeToggle } from './ThemeToggle';
 import { ApiKeyModal } from './ApiKeyModal';
-import { BrainCircuit, BarChart3, Table as TableIcon, MessageSquareText, Lightbulb, Key, Trash2, UploadCloud, Sparkles } from 'lucide-react';
+import { BrainCircuit, BarChart3, Table as TableIcon, MessageSquareText, Lightbulb, Key, Trash2, UploadCloud, Sparkles, FileImage } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentDataset, activeTab, setActiveTab, clearDataset, uploadFile, customApiKey, customApiProvider, setIsCleaningModalOpen, exportData } = useData();
+  const {
+    currentDataset,
+    activeImage,
+    activeTab,
+    setActiveTab,
+    clearDataset,
+    clearActiveImage,
+    uploadFile,
+    customApiKey,
+    customApiProvider,
+    setIsCleaningModalOpen,
+    exportData
+  } = useData();
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
 
   const handleNavFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -18,13 +30,18 @@ export const Navbar: React.FC = () => {
     }
   };
 
+  const handleReset = () => {
+    clearDataset();
+    clearActiveImage();
+  };
+
   return (
     <>
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/80 dark:bg-slate-950/80 border-b border-slate-200/80 dark:border-white/10 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           
           {/* Brand Logo */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => currentDataset ? setActiveTab('dashboard') : clearDataset()}>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => activeImage ? setActiveTab('vision') : currentDataset ? setActiveTab('dashboard') : handleReset()}>
             <div className="relative p-2.5 rounded-xl bg-gradient-to-tr from-cyan-500 via-violet-600 to-emerald-400 text-slate-950 shadow-glow-cyan">
               <BrainCircuit className="w-6 h-6 text-white" />
             </div>
@@ -38,61 +55,79 @@ export const Navbar: React.FC = () => {
                 </span>
               </div>
               <p className="text-[11px] text-slate-600 dark:text-slate-400 font-medium hidden sm:block">
-                Instant Heavy Dataset Insights & Conversational Intelligence
+                Datasets & Vision AI Chart Intelligence
               </p>
             </div>
           </div>
 
-          {/* Tab Navigation (If dataset active) */}
-          {currentDataset && (
+          {/* Tab Navigation (If dataset or image active) */}
+          {(currentDataset || activeImage) && (
             <nav className="hidden md:flex items-center p-1 rounded-xl bg-slate-200/60 dark:bg-slate-900/60 border border-slate-300/50 dark:border-white/10 backdrop-blur-md">
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                  activeTab === 'dashboard'
-                    ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                Dashboard
-              </button>
+              {currentDataset && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('dashboard')}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                      activeTab === 'dashboard'
+                        ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    Dashboard
+                  </button>
 
-              <button
-                onClick={() => setActiveTab('table')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                  activeTab === 'table'
-                    ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <TableIcon className="w-4 h-4" />
-                Data Preview
-              </button>
+                  <button
+                    onClick={() => setActiveTab('table')}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                      activeTab === 'table'
+                        ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <TableIcon className="w-4 h-4" />
+                    Data Preview
+                  </button>
 
-              <button
-                onClick={() => setActiveTab('chat')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                  activeTab === 'chat'
-                    ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <MessageSquareText className="w-4 h-4" />
-                AI Q&A
-              </button>
+                  <button
+                    onClick={() => setActiveTab('chat')}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                      activeTab === 'chat'
+                        ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <MessageSquareText className="w-4 h-4" />
+                    AI Q&A
+                  </button>
 
-              <button
-                onClick={() => setActiveTab('insights')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                  activeTab === 'insights'
-                    ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <Lightbulb className="w-4 h-4" />
-                Insights ({currentDataset.insights.length})
-              </button>
+                  <button
+                    onClick={() => setActiveTab('insights')}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                      activeTab === 'insights'
+                        ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Lightbulb className="w-4 h-4" />
+                    Insights ({currentDataset.insights.length})
+                  </button>
+                </>
+              )}
+
+              {activeImage && (
+                <button
+                  onClick={() => setActiveTab('vision')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'vision'
+                      ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200/80 dark:border-cyan-500/30'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <FileImage className="w-4 h-4 text-cyan-400" />
+                  <span>Vision Studio</span>
+                </button>
+              )}
             </nav>
           )}
 
@@ -102,13 +137,13 @@ export const Navbar: React.FC = () => {
             <label
               htmlFor="nav-dataset-upload-input"
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold cursor-pointer rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-400 border border-cyan-500/30 transition"
-              title="Upload New File"
+              title="Upload Dataset or Image"
             >
               <input
                 id="nav-dataset-upload-input"
                 type="file"
                 onChange={handleNavFileChange}
-                accept=".csv,.xlsx,.xls,.json"
+                accept=".csv,.xlsx,.xls,.json,.png,.jpg,.jpeg,.webp"
                 className="sr-only"
               />
               <UploadCloud className="w-4 h-4" />
@@ -134,16 +169,18 @@ export const Navbar: React.FC = () => {
                   <UploadCloud className="w-4 h-4 text-teal-500" />
                   <span className="hidden md:inline">Export</span>
                 </button>
-
-                <button
-                  onClick={clearDataset}
-                  title="Reset Workspace"
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl transition border border-transparent hover:border-rose-500/20"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Reset</span>
-                </button>
               </>
+            )}
+
+            {(currentDataset || activeImage) && (
+              <button
+                onClick={handleReset}
+                title="Reset Workspace"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 rounded-xl transition border border-transparent hover:border-rose-500/20"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Reset</span>
+              </button>
             )}
 
             <button

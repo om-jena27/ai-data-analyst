@@ -99,3 +99,36 @@ export interface DataFilterState {
   categoryValue?: string;
   searchTerm?: string;
 }
+
+export type AppTab = 'dashboard' | 'table' | 'chat' | 'insights' | 'vision';
+
+export interface ExtractedImageMetric {
+  label: string;
+  value: string | number;
+  change?: string;
+  trend?: 'up' | 'down' | 'neutral';
+}
+
+export interface ImageAnalysisResult {
+  imageId: string;
+  fileName: string;
+  fileSize: string;
+  imageUrl: string;
+  imageType: 'chart' | 'table' | 'infographic' | 'receipt' | 'diagram' | 'general';
+  summary: string;
+  keyInsights: string[];
+  metrics: ExtractedImageMetric[];
+  extractedTable?: {
+    headers: string[];
+    rows: (string | number)[][];
+    dataObjects: Record<string, any>[];
+  };
+  chart?: DynamicChartData;
+  detectedVisuals?: {
+    dimensions?: string;
+    aspectRatio?: string;
+    colorPalette?: string[];
+    format?: string;
+  };
+  providerUsed?: string;
+}
