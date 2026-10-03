@@ -532,3 +532,48 @@ export function exportToCsv(data: Record<string, any>[], fileName: string) {
   link.click();
   document.body.removeChild(link);
 }
+
+/**
+ * Parse raw CSV or JSON text retrieved from remote URL or Google Sheets
+ */
+export function parseCsvOrJsonString(rawText: string, fileName: string, fileSizeStr?: string): Promise<DatasetAnalysis> {
+  const size = fileSizeStr || formatBytes(new Blob([rawText]).size);
+  const trimmed = rawText.trim();
+
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      let jsonData = JSON.parse(trimmed);
+      if (!Array.isArray(jsonData)) {
+        if (typeof jsonData === 'object' && jsonData !== null) {
+          const arrayKey = Object.keys(jsonData).find(k => Array.isArray(jsonData[k]));
+          jsonData = arrayKey ? jsonData[arrayKey] : [jsonData];
+        }
+      }
+      return Promise.resolve(analyzeDataArray(jsonData, fileName, size));
+    } catch (e) {
+      // Fallback to CSV parse if not valid JSON
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    Papa.parse(rawText, {
+      header: true,
+      skipEmptyLines: 'greedy',
+      dynamicTyping: true,
+      complete: (results) => {
+        try {
+          if (!results.data || results.data.length === 0) {
+            return reject(new Error('Parsed dataset is empty or contained no valid records.'));
+          }
+          const analysis = analyzeDataArray(results.data as Record<string, any>[], fileName, size);
+          resolve(analysis);
+        } catch (err) {
+          reject(err);
+        }
+      },
+      error: (err: any) => {
+        reject(new Error(`CSV Parse Error: ${err.message}`));
+      }
+    });
+  });
+}

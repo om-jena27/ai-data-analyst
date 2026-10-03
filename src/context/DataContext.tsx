@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { askAiAnalyst } from '@/lib/aiEngine';
-import { parseUploadedFile, executeDataCleaning, exportToCsv, analyzeDataArray } from '@/lib/dataProcessor';
+import { parseUploadedFile, executeDataCleaning, exportToCsv, analyzeDataArray, parseCsvOrJsonString } from '@/lib/dataProcessor';
 import { SAMPLE_DATASETS } from '@/lib/sampleData';
 import { analyzeImageFile, askImageQuestion } from '@/lib/imageAnalyzer';
 import { SAMPLE_IMAGES } from '@/lib/sampleImages';
@@ -32,13 +32,18 @@ interface DataContextType {
   activeTab: AppTab;
   filters: DataFilterState;
   isCleaningModalOpen: boolean;
+  isReportModalOpen: boolean;
+  isConnectorModalOpen: boolean;
   setIsCleaningModalOpen: (open: boolean) => void;
+  setIsReportModalOpen: (open: boolean) => void;
+  setIsConnectorModalOpen: (open: boolean) => void;
   setActiveTab: (tab: AppTab) => void;
   setCustomApiKey: (key: string) => void;
   setCustomApiProvider: (provider: string) => void;
   setCustomApiModel: (model: string) => void;
   uploadFile: (file: File) => Promise<void>;
   uploadImageFile: (file: File) => Promise<void>;
+  connectRemoteUrl: (url: string) => Promise<void>;
   loadSampleDataset: (sampleId: string) => void;
   loadSampleImage: (sampleId?: string) => Promise<void>;
   convertImageToDataset: () => void;
@@ -72,6 +77,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
   const [filters, setFiltersState] = useState<DataFilterState>({});
   const [isCleaningModalOpen, setIsCleaningModalOpen] = useState<boolean>(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
+  const [isConnectorModalOpen, setIsConnectorModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('ai_analyst_api_key');
@@ -144,6 +151,43 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error('File Upload Error:', err);
       setError(err.message || 'Failed to parse uploaded file');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const connectRemoteUrl = async (url: string) => {
+    setIsAnalyzing(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/connectors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to fetch dataset from remote URL.');
+      }
+
+      const analysis = await parseCsvOrJsonString(json.data, json.fileName);
+      setOriginalDataset(analysis);
+      setCurrentDataset(analysis);
+      setFiltersState({});
+      setActiveTab('dashboard');
+      setChatHistory([
+        {
+          id: `msg-${Date.now()}`,
+          sender: 'ai',
+          text: `Successfully connected to and streamed live data from **${analysis.fileName}** (${analysis.rowCount.toLocaleString()} rows, ${analysis.columnCount} columns, Quality Score: ${analysis.qualityScore}/100).\n\nSource: \`${url}\`\n\nAutomated executive summary, charts, and conversational Q&A are ready!`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } catch (err: any) {
+      console.error('Remote Connect Error:', err);
+      setError(err.message || 'Failed to connect to remote dataset');
+      throw err;
     } finally {
       setIsAnalyzing(false);
     }
@@ -404,13 +448,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeTab,
         filters,
         isCleaningModalOpen,
+        isReportModalOpen,
+        isConnectorModalOpen,
         setIsCleaningModalOpen,
+        setIsReportModalOpen,
+        setIsConnectorModalOpen,
         setActiveTab,
         setCustomApiKey,
         setCustomApiProvider,
         setCustomApiModel,
         uploadFile,
         uploadImageFile,
+        connectRemoteUrl,
         loadSampleDataset,
         loadSampleImage,
         convertImageToDataset,

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { ThemeToggle } from './ThemeToggle';
 import { ApiKeyModal } from './ApiKeyModal';
-import { BrainCircuit, BarChart3, Table as TableIcon, MessageSquareText, Lightbulb, Key, Trash2, UploadCloud, Sparkles, FileImage } from 'lucide-react';
+import { BrainCircuit, BarChart3, Table as TableIcon, MessageSquareText, Lightbulb, Key, Trash2, UploadCloud, Sparkles, FileImage, Globe } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const {
@@ -18,6 +18,7 @@ export const Navbar: React.FC = () => {
     customApiKey,
     customApiProvider,
     setIsCleaningModalOpen,
+    setIsConnectorModalOpen,
     exportData
   } = useData();
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
@@ -133,6 +134,16 @@ export const Navbar: React.FC = () => {
 
           {/* Right Action Tools */}
           <div className="flex items-center gap-2">
+            {/* Connect Live Data */}
+            <button
+              onClick={() => setIsConnectorModalOpen(true)}
+              title="Connect Google Sheets or URL"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 transition"
+            >
+              <Globe className="w-4 h-4" />
+              <span className="hidden sm:inline">Connect</span>
+            </button>
+
             {/* Native Label for Direct File Selection */}
             <label
               htmlFor="nav-dataset-upload-input"

@@ -14,7 +14,9 @@ import { GlassCard } from '@/components/GlassCard';
 import { DashboardFilters } from '@/components/DashboardFilters';
 import { CorrelationHeatmap } from '@/components/CorrelationHeatmap';
 import { DataCleaningModal } from '@/components/DataCleaningModal';
-import { Sparkles, Zap, BarChart3, Database, FileImage } from 'lucide-react';
+import { DataConnectorModal } from '@/components/DataConnectorModal';
+import { ExecutiveReportModal } from '@/components/ExecutiveReportModal';
+import { Sparkles, Zap, BarChart3, Database, FileImage, Globe } from 'lucide-react';
 import { AppTab } from '@/lib/types';
 
 export default function Home() {
@@ -144,6 +146,12 @@ export default function Home() {
 
       {/* Data Cleaning Interactive Modal */}
       <DataCleaningModal />
+
+      {/* Live Data Connector Modal */}
+      <DataConnectorModal />
+
+      {/* Executive PDF Report Modal */}
+      <ExecutiveReportModal />
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-200/50 dark:border-white/10 py-6 mt-12 backdrop-blur-md">

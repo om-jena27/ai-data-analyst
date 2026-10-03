@@ -6,7 +6,7 @@ import { GlassCard } from './GlassCard';
 import { FileText, Database, Layers, ShieldCheck, AlertTriangle, TrendingUp, Sparkles, Hash, UploadCloud } from 'lucide-react';
 
 export const ExecutiveSummary: React.FC = () => {
-  const { currentDataset, filteredDataset, setActiveTab, clearDataset, setIsCleaningModalOpen, exportData } = useData();
+  const { currentDataset, filteredDataset, setActiveTab, clearDataset, setIsCleaningModalOpen, setIsReportModalOpen, exportData } = useData();
 
   const ds = filteredDataset || currentDataset;
   if (!ds) return null;
@@ -41,6 +41,15 @@ export const ExecutiveSummary: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl text-violet-700 dark:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 transition shadow-sm"
+              title="Generate Executive PDF Report"
+            >
+              <FileText className="w-4 h-4 text-violet-400" />
+              Executive PDF
+            </button>
+
             <button
               onClick={() => setIsCleaningModalOpen(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition shadow-sm"
