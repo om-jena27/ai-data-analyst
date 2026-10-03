@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
-import { GlassCard } from './GlassCard';
 import {
   Globe,
   FileSpreadsheet,
@@ -12,219 +11,193 @@ import {
   Sparkles,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   ArrowRight
 } from 'lucide-react';
 
-interface DataConnectorModalProps {}
-
-export const DataConnectorModal: React.FC<DataConnectorModalProps> = () => {
-  const { connectRemoteUrl, isAnalyzing, isConnectorModalOpen, setIsConnectorModalOpen } = useData();
+export const DataConnectorModal: React.FC = () => {
+  const { connectRemoteUrl, isConnectorModalOpen, setIsConnectorModalOpen } = useData();
   const isOpen = isConnectorModalOpen;
   const onClose = () => setIsConnectorModalOpen(false);
 
-  const [activeConnectorTab, setActiveConnectorTab] = useState<'sheets' | 'url'>('sheets');
+  const [activeTab, setActiveTab] = useState<'sheets' | 'url'>('sheets');
   const [inputUrl, setInputUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  // Sample public dataset links for instant 1-click verification
   const SAMPLE_SHEET_URL =
     'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit?usp=sharing';
   const SAMPLE_CSV_URL =
     'https://raw.githubusercontent.com/datasets/gdp/master/data/gdp.csv';
 
-  const handleConnect = async (urlToConnect?: string) => {
-    const targetUrl = (urlToConnect || inputUrl).trim();
-    if (!targetUrl) {
-      setErrorMsg('Please enter a valid link or URL.');
-      return;
-    }
-
+  const handleConnect = async (urlOverride?: string) => {
+    const target = (urlOverride || inputUrl).trim();
+    if (!target) { setErrorMsg('Please enter a valid link or URL.'); return; }
     setLoading(true);
     setErrorMsg(null);
-
     try {
-      await connectRemoteUrl(targetUrl);
+      await connectRemoteUrl(target);
       setLoading(false);
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to connect to dataset');
+      setErrorMsg(err.message || 'Failed to connect to dataset.');
       setLoading(false);
     }
   };
 
-  const handleUseSample = (type: 'sheets' | 'url') => {
-    const url = type === 'sheets' ? SAMPLE_SHEET_URL : SAMPLE_CSV_URL;
+  const handleSample = () => {
+    const url = activeTab === 'sheets' ? SAMPLE_SHEET_URL : SAMPLE_CSV_URL;
     setInputUrl(url);
     handleConnect(url);
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-      <GlassCard className="w-full max-w-xl p-6 relative border-cyan-500/30 shadow-glow-cyan animate-in fade-in zoom-in-95 duration-200">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+      <div className="relative w-full max-w-lg rounded-2xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
-        {/* Modal Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 rounded-2xl bg-gradient-to-tr from-cyan-500 via-violet-600 to-emerald-400 text-slate-950 shadow-md">
-            <Globe className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
-              Connect Live Data Source
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Stream live data directly from Google Sheets or public web URLs
-            </p>
-          </div>
-        </div>
+        {/* Gradient top accent */}
+        <div className="h-1 w-full bg-gradient-to-r from-cyan-500 via-violet-500 to-emerald-400" />
 
-        {/* Connector Sub-Tabs */}
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 mb-5">
+        <div className="p-6 space-y-5">
+
+          {/* Close */}
           <button
-            onClick={() => {
-              setActiveConnectorTab('sheets');
-              setErrorMsg(null);
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition ${
-              activeConnectorTab === 'sheets'
-                ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200 dark:border-cyan-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
+            onClick={onClose}
+            className="absolute top-5 right-5 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-            <span>Google Sheets</span>
+            <X className="w-5 h-5" />
           </button>
 
-          <button
-            onClick={() => {
-              setActiveConnectorTab('url');
-              setErrorMsg(null);
-            }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition ${
-              activeConnectorTab === 'url'
-                ? 'bg-white dark:bg-slate-800 text-cyan-600 dark:text-cyan-400 shadow-sm border border-slate-200 dark:border-cyan-500/30'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <LinkIcon className="w-4 h-4 text-violet-400" />
-            <span>Public CSV / JSON URL</span>
-          </button>
-        </div>
-
-        {/* Input Form */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-              {activeConnectorTab === 'sheets'
-                ? 'Paste Google Sheets Link'
-                : 'Paste Web Dataset URL (.csv, .json)'}
-            </label>
-            <div className="relative">
-              <input
-                type="url"
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-                placeholder={
-                  activeConnectorTab === 'sheets'
-                    ? 'https://docs.google.com/spreadsheets/d/...'
-                    : 'https://example.com/data.csv or https://api.example.com/items'
-                }
-                className="w-full bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 transition"
-              />
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-2xl bg-gradient-to-tr from-cyan-500 via-violet-600 to-emerald-400 shadow-lg">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-white">Connect Live Data Source</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Stream data from Google Sheets or a public URL</p>
             </div>
           </div>
 
-          {/* Context Instructions */}
-          {activeConnectorTab === 'sheets' ? (
-            <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
-              <div className="flex items-center gap-2 font-semibold text-cyan-600 dark:text-cyan-400">
+          {/* Tabs */}
+          <div className="flex gap-2 p-1 rounded-xl bg-slate-800 border border-white/10">
+            <button
+              onClick={() => { setActiveTab('sheets'); setErrorMsg(null); setInputUrl(''); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition ${
+                activeTab === 'sheets'
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 text-cyan-300 border border-cyan-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              Google Sheets
+            </button>
+            <button
+              onClick={() => { setActiveTab('url'); setErrorMsg(null); setInputUrl(''); }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition ${
+                activeTab === 'url'
+                  ? 'bg-gradient-to-r from-violet-500/20 to-cyan-500/20 text-violet-300 border border-violet-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <LinkIcon className="w-4 h-4 text-violet-400" />
+              Public CSV / JSON URL
+            </button>
+          </div>
+
+          {/* Input */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-300">
+              {activeTab === 'sheets' ? 'Paste Google Sheets Link' : 'Paste Dataset URL (.csv or .json)'}
+            </label>
+            <input
+              type="url"
+              value={inputUrl}
+              onChange={(e) => setInputUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleConnect()}
+              placeholder={
+                activeTab === 'sheets'
+                  ? 'https://docs.google.com/spreadsheets/d/...'
+                  : 'https://example.com/data.csv'
+              }
+              className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/30 transition"
+            />
+          </div>
+
+          {/* Info Box */}
+          {activeTab === 'sheets' ? (
+            <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 space-y-1.5">
+              <div className="flex items-center gap-2 text-cyan-400 text-xs font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Google Sheets Sharing Requirement</span>
+                Google Sheets Sharing Requirement
               </div>
-              <p className="text-[11px] leading-relaxed">
-                In Google Sheets, click <b>Share</b> in the top right, and set General Access to:{' '}
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  &quot;Anyone with the link can view&quot;
-                </span>
-                . DataPulse AI streams the data server-side securely without requiring Google credentials.
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                In Google Sheets, click <span className="text-white font-semibold">Share</span> → set General Access to{' '}
+                <span className="text-cyan-300 font-semibold">"Anyone with the link can view"</span>.
+                DataPulse AI streams the data server-side without Google credentials.
               </p>
             </div>
           ) : (
-            <div className="p-3.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs text-slate-600 dark:text-slate-300 space-y-1">
-              <span className="font-semibold text-violet-500 dark:text-violet-400">Supported Formats:</span>
-              <p className="text-[11px] leading-relaxed">
-                Any publicly reachable HTTPS URL pointing to raw <b>CSV</b> text or <b>JSON</b> arrays (e.g. GitHub raw links, Kaggle exports, or REST API endpoints).
+            <div className="p-3.5 rounded-xl bg-violet-500/10 border border-violet-500/20 space-y-1">
+              <span className="text-violet-400 text-xs font-semibold">Supported Formats</span>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Any publicly reachable HTTPS URL pointing to raw <span className="text-white font-semibold">CSV</span> or{' '}
+                <span className="text-white font-semibold">JSON</span> arrays — GitHub raw links, Kaggle exports, open APIs.
               </p>
             </div>
           )}
 
-          {/* 1-Click Instant Sample Test Option */}
-          <div className="pt-1 flex items-center justify-between">
+          {/* Try Sample */}
+          <div className="flex items-center justify-between">
             <span className="text-[11px] text-slate-500">Want to test right now?</span>
             <button
-              type="button"
-              onClick={() => handleUseSample(activeConnectorTab)}
+              onClick={handleSample}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 hover:underline"
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>
-                {activeConnectorTab === 'sheets'
-                  ? 'Load Sample Google Sheet'
-                  : 'Load Sample Open CSV'}
-              </span>
+              {activeTab === 'sheets' ? 'Load Sample Google Sheet' : 'Load Sample CSV'}
             </button>
           </div>
 
+          {/* Error */}
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">{errorMsg}</span>
+              <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Action Button */}
-          <div className="pt-2 flex items-center justify-end gap-3">
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-3 pt-1">
             <button
-              type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition"
+              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-white/10 transition"
             >
               Cancel
             </button>
-
             <button
-              type="button"
               onClick={() => handleConnect()}
               disabled={loading || !inputUrl.trim()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 disabled:opacity-50 text-slate-950 text-xs font-bold shadow-glow-cyan transition"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 disabled:opacity-40 text-slate-950 text-xs font-bold shadow-lg transition"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Streaming & Analyzing...</span>
+                  Streaming & Analyzing…
                 </>
               ) : (
                 <>
-                  <span>Connect & Load Dataset</span>
+                  Connect & Load Dataset
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </div>
         </div>
-      </GlassCard>
+      </div>
     </div>
   );
 };

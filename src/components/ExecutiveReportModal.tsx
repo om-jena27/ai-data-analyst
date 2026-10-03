@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
-import { GlassCard } from './GlassCard';
 import {
   Printer,
   FileText,
@@ -92,16 +91,16 @@ ${
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="w-full max-w-4xl my-auto space-y-4">
         {/* Top Control Bar (Hidden during Print) */}
-        <GlassCard className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3 print:hidden">
+        <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 print:hidden">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-600 text-white shadow-md">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              <h3 className="text-sm font-bold text-white">
                 Executive PDF Report Preview
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-400">
                 Ready for C-suite presentation or direct browser &quot;Save as PDF&quot;
               </p>
             </div>
@@ -110,7 +109,7 @@ ${
           <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
             <button
               onClick={handleCopyMarkdown}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-white/10 transition"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-cyan-400" />}
               <span>{copied ? 'Copied MD' : 'Copy MD'}</span>
@@ -118,7 +117,7 @@ ${
 
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-xs shadow-glow-cyan transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-bold text-xs shadow-lg transition"
             >
               <Printer className="w-4 h-4" />
               <span>Print / Save as PDF</span>
@@ -126,12 +125,12 @@ ${
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 border border-white/10 transition"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-        </GlassCard>
+        </div>
 
         {/* Customization Inputs (Hidden during Print) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 print:hidden text-xs">
